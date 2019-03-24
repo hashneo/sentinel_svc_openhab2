@@ -1,0 +1,11 @@
+{
+	"multilevelswitch" : { "name" : "light.dimmable"   , "variable" : "level"   },
+	"onoffswitch"      : { "name" : "switch"           , "variable" : "status"  },
+	"binarysensor"     : { "name" : "sensor"           , "variable" : "tripped" },
+	"5" : { "name" : "hvac"             , "variable" : "ModeStatus" },
+	"6" : { "name" : "camera"           , "variable" : "" },
+	"7" : { "name" : "lock" 	        , "variable" : "status" },
+	"8" : { "name" : "window"  			, "variable" : "status"},
+	"9" : { "name" : "remote" 		 	, "variable" : "" }
+}
+
