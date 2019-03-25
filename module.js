@@ -208,6 +208,7 @@ function _module(config) {
                 case 'Decimal':
                     return Number.parseFloat(state);
                 case 'Switch':
+                case 'OnOff':
                     return (state === 'ON');
             }
         }
