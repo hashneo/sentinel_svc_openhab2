@@ -107,6 +107,8 @@ function _module(config) {
     this.setState = ( id, value ) => {
         return new Promise( (fulfill, reject) => {
 
+            id = itemMap[id];
+
             let options = {
                 url : config.server + '/rest/items/' + id,
                 method: 'POST',
@@ -273,7 +275,7 @@ function _module(config) {
                 let data = JSON.parse(e.data);
 
                 let v;
-                
+
                 if ( ( v = data.topic.match(/^smarthome\/items\/(\w+)\/state$/) ) !== null ) {
 
                     let deviceName = itemMap[v[1]];
@@ -420,6 +422,7 @@ function _module(config) {
                                         let id = `zwave:device:${v[1]}:${v[2]}`;
 
                                         itemMap[device.name] = tag;
+                                        itemMap[tag] = device.name;
                                         //let k = v[3];
 
                                         getItemValue(map, v, id, device.label, device.state, device.type);
