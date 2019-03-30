@@ -40,6 +40,8 @@ function _module(config) {
     var request = require('request');
     var http = require('http');
     var keepAliveAgent = new http.Agent({ keepAlive: true });
+
+    let itemMap = {};
 /*
     require('request').debug = true
     require('request-debug')(request);
@@ -271,42 +273,48 @@ function _module(config) {
                 let data = JSON.parse(e.data);
 
                 let v;
+                
+                if ( ( v = data.topic.match(/^smarthome\/items\/(\w+)\/state$/) ) !== null ) {
 
-                if ( ( v = data.topic.match(/^smarthome\/items\/zw_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))\/state$/) ) !== null ){
-                    // zwave:device:dcb8fe2c:node14
+                    let deviceName = itemMap[v[1]];
 
-                    let id = `zwave:device:${v[1]}:${v[2]}`;
+                    if (deviceName) {
+                        if ((v = deviceName.match(/^zw_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))$/)) !== null) {
+                            // zwave:device:dcb8fe2c:node14
 
-                    let payLoad = JSON.parse( JSON.parse(e.data).payload );
+                            let id = `zwave:device:${v[1]}:${v[2]}`;
 
-                    let map = getItemValue( {}, v, id, null, payLoad.value, payLoad.type );
+                            let payLoad = JSON.parse(JSON.parse(e.data).payload);
 
-                    deviceCache.get(id, (err, device) => {
+                            let map = getItemValue({}, v, id, null, payLoad.value, payLoad.type);
 
-                        if (err || !device)
-                            return;
+                            deviceCache.get(id, (err, device) => {
 
-                        let update = processItemData( device.type, map[id] );
+                                if (err || !device)
+                                    return;
 
-                        statusCache.get(id, (err, current) => {
-                            if (err)
-                                return;
+                                let update = processItemData(device.type, map[id]);
+
+                                statusCache.get(id, (err, current) => {
+                                    if (err)
+                                        return;
 
 
-                            if (current !== undefined) {
-                                let newVal = merge(current, update);
+                                    if (current !== undefined) {
+                                        let newVal = merge(current, update);
 
-                                if (JSON.stringify(current) !== JSON.stringify(newVal)) {
-                                    statusCache.set(id, newVal);
-                                }
-                            }
+                                        if (JSON.stringify(current) !== JSON.stringify(newVal)) {
+                                            statusCache.set(id, newVal);
+                                        }
+                                    }
 
-                        }, true);
+                                }, true);
 
-                    });
-                    logger.trace(e.data);
+                            });
+                            logger.trace(e.data);
+                        }
+                    }
                 }
-
             });
 
         });
@@ -406,12 +414,16 @@ function _module(config) {
                             items.forEach( (device) => {
                                 let v;
 
-                                if ((v = device.name.match(/^zw_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))/)) !== null) {
-                                    let id = `zwave:device:${v[1]}:${v[2]}`;
+                                if ( device.tags.length > 0 ) {
+                                    let tag = device.tags[0];
+                                    if ((v = tag.match(/^zw_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))/)) !== null) {
+                                        let id = `zwave:device:${v[1]}:${v[2]}`;
 
-                                    //let k = v[3];
+                                        itemMap[device.name] = tag;
+                                        //let k = v[3];
 
-                                    getItemValue(map, v, id, device.label, device.state, device.type );
+                                        getItemValue(map, v, id, device.label, device.state, device.type);
+                                    }
                                 }
                             });
 
