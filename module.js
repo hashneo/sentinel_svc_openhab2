@@ -107,7 +107,7 @@ function _module(config) {
     this.setState = ( id, value ) => {
         return new Promise( (fulfill, reject) => {
 
-            id = itemMap[id];
+            //id = itemMap[id];
 
             let options = {
                 url : config.server + '/rest/items/' + id,
@@ -276,12 +276,14 @@ function _module(config) {
 
                 let v;
 
+                logger.trace(e.data);
+
                 if ( ( v = data.topic.match(/^smarthome\/items\/(\w+)\/state$/) ) !== null ) {
 
-                    let deviceName = itemMap[v[1]];
+                    let deviceName = v[1];
 
                     if (deviceName) {
-                        if ((v = deviceName.match(/^zw_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))$/)) !== null) {
+                        if ((v = deviceName.match(/^zwave_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))$/)) !== null) {
                             // zwave:device:dcb8fe2c:node14
 
                             let id = `zwave:device:${v[1]}:${v[2]}`;
@@ -416,18 +418,13 @@ function _module(config) {
                             items.forEach( (device) => {
                                 let v;
 
-                                if ( device.tags.length > 0 ) {
-                                    let tag = device.tags[0];
-                                    if ((v = tag.match(/^zw_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))/)) !== null) {
+                                //if ( device.tags.length > 0 ) {
+                                    let tag = device.name;
+                                    if ((v = tag.match(/^zwave_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))/)) !== null) {
                                         let id = `zwave:device:${v[1]}:${v[2]}`;
-
-                                        itemMap[device.name] = tag;
-                                        itemMap[tag] = device.name;
-                                        //let k = v[3];
-
                                         getItemValue(map, v, id, device.label, device.state, device.type);
                                     }
-                                }
+                                //}
                             });
 
                             devices.forEach ( (device) =>{
