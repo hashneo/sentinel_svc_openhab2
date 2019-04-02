@@ -233,17 +233,13 @@ function _module(config) {
         let p = map[id][v[3]];
 
         if (v[4] !== undefined ){
-            map[id][v[3]][v[4]] = {};
-            p = map[id][v[3]][v[4]];
-        }
-
-        if (v[5] !== '' ){
-            map[id][v[3]][v[4]][v[5]] = {};
-            p = map[id][v[3]][v[4]][v[5]];
+            map[id][v[3]][v[4]+v[5]] = {};
+            p = map[id][v[3]][v[4]+v[5]];
         }
 
         if ( label )
-        p['label'] = label;
+            p['label'] = label;
+
         p['value'] = getValue( state, type );
 
         return map;
@@ -286,7 +282,7 @@ function _module(config) {
                         if ((v = deviceName.match(/^zwave_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))$/)) !== null) {
                             // zwave:device:dcb8fe2c:node14
 
-                            let id = `zwave:device:${v[1]}:${v[2]}`;
+                            let id = `zwave:device:${v[1]}:${v[2]}:${v[3]}_${v[4]}${v[5]}`;
 
                             let payLoad = JSON.parse(JSON.parse(e.data).payload);
 
@@ -297,12 +293,11 @@ function _module(config) {
                                 if (err || !device)
                                     return;
 
-                                let update = processItemData(device.type, map[id]);
+                                let update = processItemData(device.type, map[id], v[5]);
 
                                 statusCache.get(id, (err, current) => {
                                     if (err)
                                         return;
-
 
                                     if (current !== undefined) {
                                         let newVal = merge(current, update);
@@ -325,11 +320,19 @@ function _module(config) {
     }
 
     function mapType( t ){
-        switch ( t ){
-            case 'GENERIC_TYPE_SWITCH_BINARY':
-                return 'switch';
-            case 'GENERIC_TYPE_SWITCH_MULTILEVEL':
-                return 'light.dimmable';
+
+        let v;
+
+        if ((v = t.match(/^(\w+_[a-z]+)(\d*)/)) !== null) {
+
+            let name;
+            switch (v[1]) {
+                case 'switch_binary':
+                    name = 'switch';
+                break;
+                case 'switch_dimmer':
+                    name = 'light.dimmable';
+                break;
                 /*
                 return 'alarm.panel';
                 return 'alarm.partition';
@@ -341,7 +344,11 @@ function _module(config) {
                 return 'ir.transmitter';
 
                 return 'light.switch';
-                return 'lock';
+                */
+                case 'lock_door':
+                    name = 'lock';
+                break;
+                /*
                 return 'power.generator.solar';
                 return 'power.meter';
                 return 'sensor.co2';
@@ -349,7 +356,11 @@ function _module(config) {
                 return 'sensor.glass';
                 return 'sensor.heat';
                 return 'sensor.humidity';
-                return 'sensor.leak';
+                */
+                case 'alarm_flood':
+                    name = 'sensor.leak';
+                break;
+                /*
                 return 'sensor.motion';
                 return 'sensor.smoke';
                 return 'sensor.tamper';
@@ -359,21 +370,48 @@ function _module(config) {
 
                 return 'system.timer';
                 */
+            }
+
+            if (name) {
+                return {
+                    name: name,
+                    index: v[2]
+                }
+            }
         }
 
         return null;
     }
 
-    function processItemData( type, item ) {
+    function processItemData( type, item, index ) {
         let v = {};
 
         switch (type) {
             case 'light.dimmable':
-                if (item.switch && item.switch.dimmer)
-                    v['level'] = item.switch.dimmer.value;
+                if (item.switch && item.switch['dimmer'+index])
+                    v['level'] = item.switch['dimmer'+index].value;
             case 'switch':
-                if (item.switch && item.switch.binary)
-                    v['on'] = item.switch.binary.value;
+                if (item.switch && item.switch['binary'+index])
+                    v['on'] = item.switch['binary'+index].value;
+                break;
+            case 'lock':
+                v['locked'] = item.lock['door'+index].value;
+
+                if (item.battery) {
+                    v['battery'] = {
+                        level: item.battery['level'+index].value
+                    }
+                }
+                break;
+            case 'sensor.leak':
+                v['tripped'] = {
+                    current: item.alarm['flood'+index].value
+                };
+                if (item.battery) {
+                    v['battery'] = {
+                        level: item.battery['level'+index].value
+                    }
+                }
                 break;
         }
 
@@ -395,20 +433,34 @@ function _module(config) {
                     for (let i in results) {
                         let device = results[i];
 
-                        let type = mapType(device.properties.zwave_class_generic);
+                        device.channels.forEach( (channel) => {
 
-                        if (type) {
-                            let d = {
-                                id: device.UID,
-                                name: device.label,
-                                type: type,
-                                current: {}
-                            };
+                            let type = mapType(channel.id);
 
-                            logger.trace(JSON.stringify(d));
-                            deviceCache.set(d.id, d);
-                            devices.push(d);
-                        }
+                            if (type) {
+
+                                let name = device.label;
+
+                                if ( type.index > 0 ){
+                                    name += ' - ' + channel.label;
+                                }
+/*
+                                devices.find( (element) => {
+                                    return element.name === name;
+                                });
+*/
+                                let d = {
+                                    id: channel.uid,
+                                    name: name,
+                                    type: type.name,
+                                    current: {}
+                                };
+
+                                logger.trace(JSON.stringify(d));
+                                deviceCache.set(d.id, d);
+                                devices.push(d);
+                            }
+                        })
                     }
 
                     call( 'items')
@@ -429,14 +481,21 @@ function _module(config) {
 
                             devices.forEach ( (device) =>{
 
-                                if ( map[device.id] ){
+                                let v;
 
-                                    let item = map[device.id];
+                                if ((v = device.id.match(/^zwave:device:(\w+):(\w+)(?::(\w+)_([a-z]+)(\d*))/)) !== null) {
 
-                                    let v =  processItemData( device.type, item );
+                                    let deviceId = `zwave:device:${v[1]}:${v[2]}`;
 
-                                    if (v)
-                                        statusCache.set(device.id, v);
+                                    let item = map[deviceId];
+
+                                    if (item) {
+
+                                        let value = processItemData(device.type, item, v[5]);
+
+                                        if (value)
+                                            statusCache.set(device.id, value);
+                                    }
                                 }
                             });
 
