@@ -5,7 +5,7 @@ module.exports.setLightState = (req, res) => {
     let id = req.swagger.params.id.value;
     let state = req.swagger.params.state.value;
 
-    let item = id.replace(/:/g, '_') + '_switch_binary';
+    let item = id.replace(/:/g, '_');
 
     global.module.setState(item, state === 'on' ? 'ON' : 'OFF')
         .then( (status) => {
@@ -21,7 +21,7 @@ module.exports.setLightLevel = (req, res) => {
     let id = req.swagger.params.id.value;
     let value = req.swagger.params.level.value;
 
-    let item = id.replace(/:/g, '_') + '_switch_dimmer';
+    let item = id.replace(/:/g, '_');
 
     global.module.setState(item, value)
         .then( (status) => {

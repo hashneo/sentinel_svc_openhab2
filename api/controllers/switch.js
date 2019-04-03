@@ -5,7 +5,7 @@ module.exports.setSwitchState = (req, res) => {
     let id = req.swagger.params.id.value;
     let state = req.swagger.params.state.value;
 
-    let item = id.replace(/:/g, '_').replace('zwave_', 'zw_') + '_switch_binary';
+    let item = id.replace(/:/g, '_');
 
     global.module.setState(item, state === 'on' ? 'ON' : 'OFF')
         .then( (status) => {
