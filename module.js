@@ -115,9 +115,7 @@ function _module(config) {
                 headers : {
                     'Content-Type': 'text/plain'
                 },
-                body: value,
-                timeout : 90000,
-                agent: keepAliveAgent
+                body: value
             };
 
             logger.trace(options.url);
