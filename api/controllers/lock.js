@@ -7,7 +7,7 @@ module.exports.setLockState = (req, res) => {
 
     let item = id.replace(/:/g, '_');
 
-    global.module.setState(item, state === 'open' ? 'ON' : 'OFF')
+    global.module.setState(item, state === 'open' ? 'OFF' : 'ON')
         .then( (status) => {
             res.json( { data: { status: status }, result : 'ok' } );
         })
