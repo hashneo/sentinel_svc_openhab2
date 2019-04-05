@@ -396,7 +396,7 @@ function _module(config) {
             case 'light.dimmable':
                 if (item.switch && item.switch['dimmer'+index]) {
                     v['level'] = Number.parseInt(item.switch['dimmer' + index].value);
-                    v['on'] = v.level > 0;
+                    //['on'] = v.level > 0;
                 }
             case 'switch':
                 if (item.switch && item.switch['binary'+index])
