@@ -280,7 +280,11 @@ function _module(config) {
                         if ((v = deviceName.match(/^zwave_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))$/)) !== null) {
                             // zwave:device:dcb8fe2c:node14
 
-                            let id = `zwave:device:${v[1]}:${v[2]}:${v[3]}_${v[4]}${v[5]}`;
+                            let id = `zwave:device:${v[1]}:${v[2]}`;
+
+                            if ( v[5] !== '' ){
+                                id += `:${v[3]}_${v[4]}${v[5]}`
+                            }
 
                             let payLoad = JSON.parse(JSON.parse(e.data).payload);
 
@@ -343,6 +347,7 @@ function _module(config) {
 
                 return 'light.switch';
                 */
+                case 'alarm_raw':
                 case 'lock_door':
                     name = 'lock';
                 break;
@@ -393,7 +398,31 @@ function _module(config) {
                     v['on'] = item.switch['binary'+index].value;
                 break;
             case 'lock':
-                v['locked'] = item.lock['door'+index].value;
+                if ( item.alarm && item.alarm['raw'+index] ){
+                    let data = item.alarm['raw'+index].value;
+
+                    try {
+                        data = JSON.parse(data);
+
+                        switch (data.notification){
+                            case 'ACCESS_CONTROL__KEYPAD_UNLOCK':
+                            case 'ACCESS_CONTROL__MANUAL_UNLOCK':
+                                v['locked'] = false;
+                                break;
+                            case 'ACCESS_CONTROL__KEYPAD_LOCK':
+                            case 'ACCESS_CONTROL__MANUAL_LOCK':
+                            case 'ACCESS_CONTROL__AUTO_LOCK':
+                                v['locked'] = true;
+                                break;
+                        }
+                    }
+                    catch(err){
+                        console.error(err);
+                    }
+                }
+
+                if ( item.lock && item.lock['door'+index] )
+                    v['locked'] = item.lock['door'+index].value;
 
                 if (item.battery) {
                     v['battery'] = {
@@ -437,10 +466,15 @@ function _module(config) {
 
                             if (type) {
 
+                                let id = channel.uid;
                                 let name = device.label;
 
                                 if ( type.index > 0 ){
                                     name += ' - ' + channel.label;
+                                } else {
+                                    let p = id.split(':');
+                                    p.pop();
+                                    id = p.join(':');
                                 }
 /*
                                 devices.find( (element) => {
@@ -448,15 +482,17 @@ function _module(config) {
                                 });
 */
                                 let d = {
-                                    id: channel.uid,
+                                    id: id,
                                     name: name,
                                     type: type.name,
                                     current: {}
                                 };
 
-                                logger.trace(JSON.stringify(d));
-                                deviceCache.set(d.id, d);
-                                devices.push(d);
+                                if (!devices.find( (e) => { return e.id === d.id; })) {
+                                    logger.trace(JSON.stringify(d));
+                                    deviceCache.set(d.id, d);
+                                    devices.push(d);
+                                }
                             }
                         })
                     }
@@ -481,7 +517,7 @@ function _module(config) {
 
                                 let v;
 
-                                if ((v = device.id.match(/^zwave:device:(\w+):(\w+)(?::(\w+)_([a-z]+)(\d*))/)) !== null) {
+                                if ((v = device.id.match(/^zwave:device:(\w+):(\w+)(?::(\w+)_([a-z]+)(\d*))*/)) !== null) {
 
                                     let deviceId = `zwave:device:${v[1]}:${v[2]}`;
 
@@ -489,7 +525,7 @@ function _module(config) {
 
                                     if (item) {
 
-                                        let value = processItemData(device.type, item, v[5]);
+                                        let value = processItemData(device.type, item, v[5]||'');
 
                                         if (value)
                                             statusCache.set(device.id, value);
