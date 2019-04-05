@@ -124,9 +124,12 @@ function _module(config) {
                 request(options, (err, response, body) => {
                     if (!err && response.statusCode == 200) {
                         fulfill({});
-                    } else {
+                    } if ( response.statusCode >= 500 ) {
                         logger.error(err||body);
                         reject(err||body);
+                    } else {
+                        let msg = JSON.parse( body );
+                        reject( {code: msg.error['http-code'], message: msg.error.message} );
                     }
                 });
             }catch(e){
@@ -391,8 +394,10 @@ function _module(config) {
 
         switch (type) {
             case 'light.dimmable':
-                if (item.switch && item.switch['dimmer'+index])
-                    v['level'] = item.switch['dimmer'+index].value;
+                if (item.switch && item.switch['dimmer'+index]) {
+                    v['level'] = Number.parseInt(item.switch['dimmer' + index].value);
+                    v['on'] = v.level > 0;
+                }
             case 'switch':
                 if (item.switch && item.switch['binary'+index])
                     v['on'] = item.switch['binary'+index].value;
@@ -407,8 +412,10 @@ function _module(config) {
                         switch (data.notification){
                             case 'ACCESS_CONTROL__KEYPAD_UNLOCK':
                             case 'ACCESS_CONTROL__MANUAL_UNLOCK':
+                            case 'ACCESS_CONTROL__REMOTE_UNLOCK':
                                 v['locked'] = false;
                                 break;
+                            case 'ACCESS_CONTROL__REMOTE_LOCK':
                             case 'ACCESS_CONTROL__KEYPAD_LOCK':
                             case 'ACCESS_CONTROL__MANUAL_LOCK':
                             case 'ACCESS_CONTROL__AUTO_LOCK':
