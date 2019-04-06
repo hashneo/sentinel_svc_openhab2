@@ -15,6 +15,17 @@ module.exports.setLightState = (req, res) => {
             res.json( { data: { status: status }, result : 'ok' } );
         })
         .catch( (err) => {
+            if ( err.code === 404 ){
+                item = item.replace('_switch_binary', '_switch_dimmer');
+                global.module.setState(item, ( state === 'on' ? '100' : '0') )
+                    .then( (status) => {
+                        res.json( { data: { status: status }, result : 'ok' } );
+                    })
+                    .catch( (err) => {
+                        res.status(err.code >= 400 && err.code <= 451 ? err.code : 500).json( { code: err.code || 0, message: err.message } );
+                    });
+                return;
+            }
             res.status(err.code >= 400 && err.code <= 451 ? err.code : 500).json( { code: err.code || 0, message: err.message } );
         });
 };

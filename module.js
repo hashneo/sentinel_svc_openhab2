@@ -118,7 +118,7 @@ function _module(config) {
                 body: value
             };
 
-            logger.trace(options.url);
+            logger.trace(`setting ${options.url} with value '${value}'`);
 
             try {
                 request(options, (err, response, body) => {
@@ -402,7 +402,7 @@ function _module(config) {
             case 'light.dimmable':
                 if (item.switch && item.switch['dimmer'+index]) {
                     v['level'] = Number.parseInt(item.switch['dimmer' + index].value);
-                    //['on'] = v.level > 0;
+                    v['on'] = v.level > 0;
                 }
             case 'switch':
                 if (item.switch && item.switch['binary'+index])
