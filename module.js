@@ -124,12 +124,18 @@ function _module(config) {
                 request(options, (err, response, body) => {
                     if (!err && response.statusCode == 200) {
                         fulfill({});
-                    } if ( response.statusCode >= 500 ) {
+                    } else if ( response.statusCode >= 500 ) {
                         logger.error(err||body);
                         reject(err||body);
                     } else {
-                        let msg = JSON.parse( body );
-                        reject( {code: msg.error['http-code'], message: msg.error.message} );
+                        let msg;
+
+                        try {
+                            msg = JSON.parse(body);
+                            reject({code: msg.error['http-code'], message: msg.error.message});
+                        } catch(e){
+                            reject(err);
+                        }
                     }
                 });
             }catch(e){
