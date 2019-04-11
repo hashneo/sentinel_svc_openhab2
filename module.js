@@ -289,6 +289,8 @@ function _module(config) {
                         if ((v = deviceName.match(/^zwave_device_(\w+)_(\w+)(?:_(\w+)_([a-z]+)(\d*))$/)) !== null) {
                             // zwave:device:dcb8fe2c:node14
 
+                            logger.info(e.data);
+
                             let id = `zwave:device:${v[1]}:${v[2]}`;
 
                             if ( v[5] !== '' ){
