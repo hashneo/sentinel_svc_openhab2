@@ -444,10 +444,12 @@ function _module(config) {
                 }
                 break;
             case 'sensor.leak':
-                v['tripped'] = {
-                    current: item.alarm['flood'+index].value
-                };
-                if (item.battery) {
+                if ( item.alarm && item.alarm['flood'+index] ) {
+                    v['tripped'] = {
+                        current: item.alarm['flood' + index].value
+                    };
+                }
+                if (item.battery && item.battery['level'+index]) {
                     v['battery'] = {
                         level: item.battery['level'+index].value
                     }
