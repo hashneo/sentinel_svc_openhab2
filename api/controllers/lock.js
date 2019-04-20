@@ -7,6 +7,9 @@ module.exports.setLockState = (req, res) => {
 
     let item = id.replace(/:/g, '_');
 
+    if ( !item.includes('_lock_door'))
+        item += '_lock_door';
+
     global.module.setState(item, state === 'open' ? 'OFF' : 'ON')
         .then( (status) => {
             res.json( { data: { status: status }, result : 'ok' } );

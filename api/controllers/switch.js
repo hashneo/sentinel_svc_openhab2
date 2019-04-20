@@ -7,6 +7,9 @@ module.exports.setSwitchState = (req, res) => {
 
     let item = id.replace(/:/g, '_');
 
+    if ( !item.includes('_switch_binary'))
+        item += '_switch_binary';
+
     global.module.setState(item, state === 'on' ? 'ON' : 'OFF')
         .then( (status) => {
             res.json( { data: { status: status }, result : 'ok' } );
