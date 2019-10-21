@@ -419,14 +419,16 @@ function _module(config) {
 
                         switch (data.notification){
                             case 'ACCESS_CONTROL__KEYPAD_UNLOCK':
+                                v['last-code'] = data.code;
                             case 'ACCESS_CONTROL__MANUAL_UNLOCK':
                             case 'ACCESS_CONTROL__REMOTE_UNLOCK':
                                 v['locked'] = false;
                                 break;
-                            case 'ACCESS_CONTROL__REMOTE_LOCK':
                             case 'ACCESS_CONTROL__KEYPAD_LOCK':
+                                v['last-code'] = data.code;
                             case 'ACCESS_CONTROL__MANUAL_LOCK':
                             case 'ACCESS_CONTROL__AUTO_LOCK':
+                            case 'ACCESS_CONTROL__REMOTE_LOCK':
                                 v['locked'] = true;
                                 break;
                         }
